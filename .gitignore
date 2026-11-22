@@ -1,0 +1,60 @@
+# --- Notas locales / asistentes de IA ---
+CLAUDE.md
+.claude/
+
+# --- Secretos y configuración local ---
+.env
+.env.*
+*.local.json
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editores / IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+
+# --- Flutter / Dart / Pub ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+**/doc/api/
+migrate_working_dir/
+app.*.symbols
+app.*.map.json
+
+# --- Android (complementa android/.gitignore) ---
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/local.properties
+**/android/key.properties
+*.jks
+*.keystore
+
+# --- Binarios compilados (se generan con flutter build; se comparten aparte) ---
+*.apk
+*.aab
+
+# --- Dependencias / compilados de la API (si se sube en backend/api/) ---
+node_modules/
+__pycache__/
+*.pyc
+venv/
+.venv/
+vendor/
+backend/**/[Bb]in/
+backend/**/[Oo]bj/
+
+# --- Logs ---
+*.log
