@@ -28,6 +28,10 @@ alojada en una máquina virtual. Se ejecuta desde **Android Studio**, en el
 Para Windows. **Haz todo esto con internet**: la primera vez se descargan el
 SDK, la imagen del emulador y las dependencias. Después funciona sin conexión.
 
+> ¿Trabajas en Linux (Ubuntu)? Sigue **[README_LINUX.md](README_LINUX.md)**:
+> incluye la API lista en `backend/api/`, MySQL, red entre VM y la app sin
+> emulador.
+
 **Antes de empezar:** el repo es de Mauro en GitHub. Pídele que te agregue
 como colaborador (Settings → Collaborators) para poder clonar y subir cambios.
 Versión con la que se desarrolló: **Flutter 3.50.1 (stable)**. Usa esa o una
