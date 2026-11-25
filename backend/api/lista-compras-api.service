@@ -1,0 +1,19 @@
+[Unit]
+Description=API Lista de Compras (Node.js + Express)
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lista
+Group=lista
+WorkingDirectory=/opt/lista-compras/backend/api
+EnvironmentFile=/opt/lista-compras/backend/api/.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

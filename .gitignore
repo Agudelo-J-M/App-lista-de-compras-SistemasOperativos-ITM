@@ -5,6 +5,7 @@ CLAUDE.md
 # --- Secretos y configuración local ---
 .env
 .env.*
+!.env.example
 *.local.json
 
 # --- Sistema operativo ---
