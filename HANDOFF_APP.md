@@ -32,6 +32,12 @@ prueba en memoria (`kUseMockData = true`). Si la API del compañero cumple el
 contrato al pie de la letra, tu trabajo se reduce a cambiar **dos líneas**.
 Si se desvía en algo, aquí está dónde ajustarlo.
 
+**La API del compañero ya está en el repo**, en [`backend/api/`](backend/api/)
+(Node.js + Express). Se revisó contra el contrato y lo cumple, en el puerto
+3000. Puedes leer `backend/api/app.js` para ver exactamente qué responde cada
+endpoint. Lo único que todavía falta de su parte son las respuestas reales en
+`backend/FICHA_API.md`.
+
 ## Resumen de tareas
 
 - [ ] 1. Preparar tu entorno y ejecutar la app con datos de prueba (README.md).
@@ -64,7 +70,9 @@ conectar la API no requiere tocar nada fuera de esos archivos.
 ## 2. Probar sin la VM
 
 Tú no tienes la VM del compañero, así que no puedes llamar a su API desde tu
-PC. En su lugar, `test/api_repository_test.dart` simula el servidor con
+PC. (Si quieres probar en vivo, puedes correr la API en tu PC: Node.js +
+MySQL locales y los pasos 4–5 de [backend/README.md](backend/README.md).
+Es opcional.) En su lugar, `test/api_repository_test.dart` simula el servidor con
 `MockClient` y comprueba que la app:
 
 - lea la lista, el producto creado y el actualizado;
@@ -122,10 +130,10 @@ const String kApiBaseUrl = String.fromEnvironment(
 );
 ```
 
-- Con la opción **A** de red (NAT + reenvío de puerto), la URL es
-  `http://10.0.2.2:<PUERTO>/api`. `10.0.2.2` es la forma en que el emulador ve
-  al PC donde corre, así que funciona aunque cambien las IPs.
-- Con la opción **B** (solo anfitrión), es `http://<IP_DE_LA_VM>:<PUERTO>/api`.
+- La URL es `http://10.0.2.2:3000/api` (ya es el valor por defecto; solo
+  cámbiala si la ficha dice otra cosa). La VM usa NAT con reenvío del puerto
+  3000, y `10.0.2.2` es la forma en que el emulador ve al PC donde corre, así
+  que funciona aunque cambien las IPs.
 - **No uses `localhost` ni `127.0.0.1`:** dentro del emulador apuntan al
   propio emulador, no al PC.
 

@@ -7,16 +7,20 @@
 
 ## Datos de conexión
 
+Lo que ya se sabe por el código de `backend/api/` viene lleno. Completa los
+campos marcados con ✏️ (`lsb_release -d`, `mysql --version`, `node --version`
+en la VM).
+
 | Dato                                      | Valor                     |
 |-------------------------------------------|---------------------------|
-| Sistema operativo de la VM                | _ej. Ubuntu Server 24.04_ |
-| Hipervisor                                | _ej. VirtualBox 7_        |
-| Red de la VM (A: NAT + reenvío / B: solo anfitrión) | _A_             |
-| Puerto de la API                          | _3000_                    |
-| IP de la VM (solo si es opción B)         | _—_                       |
-| **URL base que debe usar la app**         | _`http://10.0.2.2:3000/api`_ |
-| Lenguaje / framework de la API            | _ej. Node.js + Express_   |
-| Motor de BD y versión                     | _ej. MySQL 8.0.36_        |
+| ✏️ Sistema operativo de la VM             | _ej. Ubuntu Server 24.04_ |
+| ✏️ Versión de VirtualBox                  | _ej. 7.1_                 |
+| Red de la VM                              | NAT + reenvío de puerto 3000 → 3000 |
+| Puerto de la API                          | 3000                      |
+| **URL base que debe usar la app**         | `http://10.0.2.2:3000/api` |
+| Lenguaje / framework de la API            | Node.js + Express + mysql2 (`backend/api/`) |
+| ✏️ Versión de Node.js                     | _ej. v20.18.0_            |
+| ✏️ Motor de BD y versión                  | _ej. MySQL 8.0.40_        |
 
 ## Diferencias con el contrato
 
@@ -24,7 +28,7 @@ Cualquier cosa que **no** sea igual a lo de HANDOFF_BACKEND.md, sección 3
 (nombres de campos, rutas, códigos de respuesta, formato de errores...). Si
 todo es igual, escribir "Ninguna".
 
-- _Ninguna_
+- Ninguna. Extra que no afecta a la app: `GET /api/salud` → `{"ok": true}`.
 
 ## Respuestas reales
 

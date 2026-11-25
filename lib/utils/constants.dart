@@ -16,14 +16,13 @@ const bool kUseMockData = bool.fromEnvironment('USE_MOCK', defaultValue: true);
 
 /// URL base de la API (sin "/" al final).
 ///
-/// - VM en NAT con reenvío de puerto (recomendado): `http://10.0.2.2:<PUERTO>/api`.
-///   `10.0.2.2` es la dirección con la que el emulador ve al PC anfitrión, así
-///   que la URL no cambia aunque cambie la IP de la VM o del PC.
-/// - VM en red "solo anfitrión" (host-only): `http://<IP_DE_LA_VM>:<PUERTO>/api`,
-///   ej. `http://192.168.56.101:3000/api` en VirtualBox.
+/// La VM usa NAT con reenvío del puerto 3000 (backend/README.md, paso 7).
+/// `10.0.2.2` es la dirección con la que el emulador ve al PC físico, así que
+/// la URL no depende de ninguna IP. Puerto 3000 confirmado por la API
+/// (backend/api/.env.example).
 const String kApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:3000/api', // TODO: confirmar puerto con backend
+  defaultValue: 'http://10.0.2.2:3000/api',
 );
 
 /// Tiempo máximo de espera por petición HTTP.

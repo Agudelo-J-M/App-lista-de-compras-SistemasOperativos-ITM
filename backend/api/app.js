@@ -3,7 +3,10 @@ const express = require('express');
 const ESTADOS = ['pendiente', 'comprado'];
 const CANTIDAD_MAXIMA = 99999999.99;
 
-function validarProducto(cuerpo) {
+// PUT reemplaza el producto completo, así que ahí `estado` es obligatorio:
+// si faltara, un producto comprado volvería a "pendiente" sin avisar.
+// En POST, si no viene, se crea como "pendiente".
+function validarProducto(cuerpo, { estadoObligatorio = false } = {}) {
   if (cuerpo === null || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) {
     return { error: 'El cuerpo debe ser un objeto JSON.' };
   }
@@ -26,16 +29,25 @@ function validarProducto(cuerpo) {
   if (cantidad > CANTIDAD_MAXIMA) {
     return { error: 'La cantidad es demasiado grande (máximo 99999999.99).' };
   }
+  // DECIMAL(10,2): con más decimales MySQL redondearía sin avisar.
+  const centavos = cantidad * 100;
+  if (Math.abs(centavos - Math.round(centavos)) > 1e-6) {
+    return { error: 'La cantidad admite máximo 2 decimales.' };
+  }
 
-  const unidad =
+  const unidadCruda =
     cuerpo.unidad === undefined || cuerpo.unidad === null ? '' : cuerpo.unidad;
-  if (typeof unidad !== 'string') {
+  if (typeof unidadCruda !== 'string') {
     return { error: 'La unidad debe ser texto.' };
   }
+  const unidad = unidadCruda.trim();
   if (unidad.length > 30) {
     return { error: 'La unidad no puede superar los 30 caracteres.' };
   }
 
+  if (cuerpo.estado === undefined && estadoObligatorio) {
+    return { error: 'El estado es obligatorio.' };
+  }
   const estado = cuerpo.estado === undefined ? 'pendiente' : cuerpo.estado;
   if (!ESTADOS.includes(estado)) {
     return { error: 'El estado debe ser "pendiente" o "comprado".' };
@@ -45,8 +57,10 @@ function validarProducto(cuerpo) {
 }
 
 function idDeParametro(valor) {
+  // Solo dígitos: evita que "1e3" o "0x10" se acepten como ids.
+  if (!/^\d+$/.test(valor)) return null;
   const id = Number(valor);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 const ruta = (manejador) => (req, res, next) =>
@@ -99,7 +113,9 @@ function createApp(repositorio) {
       if (id === null) {
         return res.status(400).json({ error: 'El id debe ser un número entero positivo.' });
       }
-      const { error, producto } = validarProducto(req.body);
+      const { error, producto } = validarProducto(req.body, {
+        estadoObligatorio: true,
+      });
       if (error) return res.status(400).json({ error });
       const actualizado = await repositorio.actualizar(id, producto);
       if (!actualizado) {

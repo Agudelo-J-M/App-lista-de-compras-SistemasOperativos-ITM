@@ -164,6 +164,64 @@ test('POST con JSON mal formado responde 400', async () => {
   }
 });
 
+test('PUT sin estado responde 400 y no modifica el producto', async () => {
+  const api = await levantarApi();
+  try {
+    await fetch(`${api.url}/productos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Queso', cantidad: 1, unidad: 'kg', estado: 'comprado' }),
+    });
+
+    const res = await fetch(`${api.url}/productos/1`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Queso', cantidad: 1, unidad: 'kg' }),
+    });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'El estado es obligatorio.');
+
+    const producto = await (await fetch(`${api.url}/productos/1`)).json();
+    assert.equal(producto.estado, 'comprado');
+  } finally {
+    await api.cerrar();
+  }
+});
+
+test('Cantidad con más de 2 decimales responde 400', async () => {
+  const api = await levantarApi();
+  try {
+    const res = await fetch(`${api.url}/productos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Arroz', cantidad: 1.555, unidad: 'kg' }),
+    });
+    assert.equal(res.status, 400);
+
+    const ok = await fetch(`${api.url}/productos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Arroz', cantidad: 1.15, unidad: ' kg ' }),
+    });
+    assert.equal(ok.status, 201);
+    assert.equal((await ok.json()).unidad, 'kg');
+  } finally {
+    await api.cerrar();
+  }
+});
+
+test('Id no numérico responde 400', async () => {
+  const api = await levantarApi();
+  try {
+    for (const id of ['abc', '1e3', '0x10', '0']) {
+      const res = await fetch(`${api.url}/productos/${id}`);
+      assert.equal(res.status, 400, `id "${id}"`);
+    }
+  } finally {
+    await api.cerrar();
+  }
+});
+
 test('PUT y DELETE sobre un id inexistente responden 404', async () => {
   const api = await levantarApi();
   try {

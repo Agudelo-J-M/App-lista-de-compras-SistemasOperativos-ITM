@@ -24,22 +24,26 @@ Cómo abrir y ejecutar el proyecto en Android Studio, paso a paso:
 
 **Este documento es para ti, compañero de BD/API.**
 
+**La API ya está escrita** (Node.js + Express, en [`backend/api/`](backend/api/)).
+Lo que falta es montarla en la VM. Los comandos exactos, paso a paso, están en
+**[backend/README.md](backend/README.md)**. Este documento explica el qué y
+el porqué: contrato, red, pruebas y el día de la sustentación.
+
 Si algo de aquí no se puede cumplir (otro puerto, otra forma de un campo,
 etc.), anótalo en `backend/FICHA_API.md` en "Diferencias con el contrato" y
 avísale al compañero de integración.
 
 ## Resumen de tareas
 
-- [ ] 1. Crear la VM (Windows Server o Linux) e instalar MySQL o MariaDB.
-- [ ] 2. Ejecutar [`backend/schema.sql`](backend/schema.sql) (base, tabla `productos` y usuario) y luego [`backend/datos_ejemplo.sql`](backend/datos_ejemplo.sql).
-- [ ] 3. Programar la API REST con los 5 endpoints de la sección 3 (lenguaje libre).
-- [ ] 4. Hacer que la API escuche en `0.0.0.0:3000` y abrir el puerto 3000 en el firewall de la VM.
-- [ ] 5. Configurar la red de la VM con reenvío de puerto 3000 → 3000 (sección 4).
-- [ ] 6. Probar la API desde el PC anfitrión (sección 5).
-- [ ] 7. Llenar `backend/FICHA_API.md` y subirla al repo (sección 6). Opcional: subir también el código de la API en `backend/api/`.
-- [ ] 8. **Con internet**, instalar Android Studio y Flutter y ejecutar la app una vez (README.md).
-- [ ] 9. Cuando integración avise: `git pull`, ejecutar la app contra la VM y reportar errores (sección 7).
-- [ ] 10. Ensayar la sustentación completa **sin internet** (sección 8).
+- [ ] 1. Crear la VM Ubuntu en VirtualBox con red NAT ([backend/README.md](backend/README.md), pasos 1–3).
+- [ ] 2. Instalar MySQL, cargar `schema.sql` y `datos_ejemplo.sql`, y cambiar la clave de `app_compras` con `ALTER USER` (paso 4).
+- [ ] 3. Instalar la API de `backend/api/` y dejarla como servicio (pasos 5–6).
+- [ ] 4. Abrir el puerto 3000 en el firewall y crear el reenvío de puerto 3000 → 3000 en VirtualBox (paso 7).
+- [ ] 5. Probar todos los endpoints desde el PC físico (sección 5 de este documento).
+- [ ] 6. Llenar `backend/FICHA_API.md` con las respuestas reales y subirla al repo (sección 6).
+- [ ] 7. **Con internet**, instalar Android Studio y Flutter **en el PC físico** y ejecutar la app una vez (README.md).
+- [ ] 8. Cuando integración avise: `git pull`, ejecutar la app contra la VM y reportar errores (sección 7).
+- [ ] 9. Ensayar la sustentación completa **sin internet** (sección 8).
 
 ---
 
@@ -49,7 +53,7 @@ avísale al compañero de integración.
 Tu PC (el día de la sustentación, sin internet)
 
   Android Studio
-  └─ Emulador Android (AVD)                    VM (Windows Server / Linux)
+  └─ Emulador Android (AVD)                    VM Ubuntu (VirtualBox)
      ┌─────────────┐   http://10.0.2.2:3000/api   ┌──────────────────┐
      │ App Flutter │ ───────────────────────────► │ API REST :3000   │
      └─────────────┘   (reenvío de puerto NAT     │        │         │
@@ -63,6 +67,8 @@ Tu PC (el día de la sustentación, sin internet)
   exponerse fuera de la VM: la API se conecta a `localhost:3306`.
 - `10.0.2.2` es la dirección con la que el emulador de Android ve a tu PC.
   Con el reenvío de puerto, esa dirección llega a la VM.
+- **Una sola VM.** Android Studio y el emulador corren en el PC físico, no en
+  una VM.
 
 ## 2. Base de datos
 
@@ -87,15 +93,14 @@ Dos scripts, ambos se ejecutan **como root dentro de la VM**:
 | [`backend/datos_ejemplo.sql`](backend/datos_ejemplo.sql) | **Borra todo** y carga 5 productos de ejemplo | Al inicio, y antes de la sustentación para limpiar lo de los ensayos |
 
 ```
-mysql -u root -p < schema.sql
-mysql -u root -p < datos_ejemplo.sql
+sudo mysql < schema.sql
+sudo mysql < datos_ejemplo.sql
 ```
 
-- **Cambia la contraseña** de `app_compras` en `schema.sql` antes de
-  ejecutarlo. La API se conecta con ese usuario, no con root.
-- En Windows Server, si `mysql` no se reconoce, usa la ruta completa, ej.
-  `"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"`, o ábrelo desde
-  **MySQL Command Line Client** y usa `source C:/ruta/schema.sql`.
+- La API se conecta con el usuario `app_compras`, no con root. `schema.sql`
+  lo crea con una clave provisional: **cámbiala con `ALTER USER`** después de
+  ejecutarlo ([backend/README.md](backend/README.md), paso 4) y **no editando
+  el script**, para que la clave real nunca termine subida al repo.
 
 ## 3. Contrato de la API
 
@@ -147,9 +152,11 @@ ese mensaje al usuario**, así que escríbelo legible.
 | Caso                                                   | Código |
 |--------------------------------------------------------|--------|
 | `nombre` falta, vacío o > 120 caracteres               | `400`  |
-| `cantidad` falta, no numérica o ≤ 0                    | `400`  |
+| `cantidad` falta, no numérica, ≤ 0 o con más de 2 decimales | `400`  |
 | `unidad` > 30 caracteres                               | `400`  |
 | `estado` distinto de `pendiente`/`comprado`            | `400`  |
+| `estado` falta en un PUT (en POST, si falta, queda `pendiente`) | `400`  |
+| `id` no es un entero positivo (ej. `abc`)              | `400`  |
 | JSON mal formado                                       | `400`  |
 | `id` no existe (GET/PUT/DELETE)                        | `404`  |
 | Error de BD u otro inesperado                          | `500`  |
@@ -158,51 +165,43 @@ Ejemplo: `400 {"error": "El nombre es obligatorio."}`
 
 ### Implementación
 
-El lenguaje y el framework son libres: Node.js + Express, Python + Flask o
-FastAPI, PHP, C# / ASP.NET, etc. Solo debe cumplir:
+Ya está hecha en [`backend/api/`](backend/api/), con Node.js + Express +
+mysql2, y cumple todo lo anterior:
 
-1. Escuchar en **`0.0.0.0`** (todas las interfaces), **no** en `127.0.0.1`.
-   Si escucha solo en localhost, el emulador no podrá conectarse.
-2. Puerto **3000**. Si usas otro, anótalo en la ficha.
-3. **Consultas parametrizadas** (`?` / `%s` / `@param`). Nunca concatenes
-   strings al armar SQL.
-4. Leer el usuario y la contraseña de MySQL de un archivo de configuración o
-   de variables de entorno, no dejarlos fijos en el código del repo (`.env`
-   ya está en `.gitignore`).
-5. Ideal: que la API arranque sola con la VM (servicio `systemd` en Linux,
-   servicio de Windows o tarea programada en Windows Server). Así el día de
-   la sustentación no se te olvida iniciarla.
+| Archivo | Qué hace |
+|---------|----------|
+| `server.js` | Arranca la API en `0.0.0.0:3000` (valores de `.env`) |
+| `app.js` | Rutas, validaciones y mensajes de error |
+| `repository.js` | Consultas SQL, todas parametrizadas (`?`) |
+| `db.js` | Conexión a MySQL; devuelve `cantidad` como número |
+| `.env.example` | Plantilla de configuración. Se copia a `.env`, que no se sube al repo |
+| `lista-compras-api.service` | Servicio `systemd`: la API arranca sola con la VM |
+| `test/api.test.js` | Pruebas de los endpoints, sin necesitar MySQL (`npm test`) |
+
+Además del contrato tiene `GET /api/salud`, que responde `{"ok": true}`:
+sirve para comprobar que la API está viva sin tocar la BD.
+
+Si cambias la API, mantén estas reglas: escuchar en **`0.0.0.0`** (si escucha
+solo en `127.0.0.1`, el emulador no llega), puerto **3000**, consultas
+**parametrizadas** y credenciales solo en `.env`.
 
 ## 4. Red de la VM (sin internet)
 
-### En la VM
+La VM usa la red **NAT** de VirtualBox, con un **reenvío de puerto**: lo que
+llega al puerto 3000 del PC físico se pasa al puerto 3000 de la VM. El
+emulador llama a `10.0.2.2:3000`, que es el PC físico, y de ahí llega a la
+API. Con esto la URL de la app es **`http://10.0.2.2:3000/api`** y no
+depende de ninguna IP, así que funciona igual sin internet ni router.
 
-- **Firewall**, abrir el 3000:
-  - Windows Server (PowerShell como administrador):
-    ```
-    New-NetFirewallRule -DisplayName "API Lista Compras" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
-    ```
-  - Linux: `sudo ufw allow 3000/tcp`
-- **MySQL no se abre** al exterior; con que la API llegue por localhost basta.
+Dos cosas que configurar (comandos en [backend/README.md](backend/README.md), paso 7):
 
-### En el hipervisor (opción A, recomendada: NAT + reenvío de puerto)
+1. **Firewall de la VM:** abrir el 3000 (`sudo ufw allow 3000/tcp`). **El
+   3306 de MySQL no se abre:** la API llega por localhost.
+2. **VirtualBox:** Configuración → Red → Adaptador 1 (**NAT**) → Avanzado →
+   **Reenvío de puertos** → regla TCP, puerto anfitrión `3000`, puerto
+   invitado `3000`, IPs vacías.
 
-- **VirtualBox:** Configuración de la VM → Red → Adaptador 1: **NAT** →
-  Avanzado → **Reenvío de puertos** → nueva regla: TCP, puerto anfitrión
-  `3000`, puerto invitado `3000`, IPs vacías.
-- **VMware Workstation:** Editar → Editor de red virtual → VMnet8 (NAT) →
-  Configuración NAT → Agregar: puerto anfitrión `3000` → IP de la VM, puerto `3000`.
-- **Hyper-V:** no tiene reenvío de puertos simple; usa la opción B.
-
-Con esto la URL de la app es **`http://10.0.2.2:3000/api`**.
-
-### Opción B: red "solo anfitrión" (host-only)
-
-VirtualBox "Adaptador solo anfitrión" (IPs `192.168.56.x`) o un conmutador
-**interno** de Hyper-V con IP fija en la VM. La URL de la app pasa a ser
-`http://<IP_DE_LA_VM>:3000/api`.
-
-**Evita el modo puente (bridged):** sin router o sin internet la VM puede
+No uses el modo **puente (bridged)**: sin router ni internet la VM puede
 quedarse sin IP.
 
 ### Emulador y VM en el mismo PC
@@ -216,9 +215,9 @@ tiempo, no el día de la sustentación.
 
 ## 5. Probar la API
 
-Desde **tu PC** (no desde la VM), en el **Símbolo del sistema (cmd)**, no en
-PowerShell: PowerShell maneja distinto las comillas y los JSON llegan dañados.
-Con la opción B, cambia `localhost` por la IP de la VM.
+Desde **tu PC físico** (no desde la VM), en el **Símbolo del sistema (cmd)**,
+no en PowerShell: PowerShell maneja distinto las comillas y los JSON llegan
+dañados. `localhost:3000` llega a la VM gracias al reenvío de puerto.
 
 ```bat
 :: Listar
@@ -236,14 +235,18 @@ curl -i -X DELETE http://localhost:3000/api/productos/6
 :: Error esperado: 400
 curl -i -X POST http://localhost:3000/api/productos -H "Content-Type: application/json" -d "{\"nombre\":\"\",\"cantidad\":0}"
 
+:: Error esperado: 400 (PUT sin estado)
+curl -i -X PUT http://localhost:3000/api/productos/1 -H "Content-Type: application/json" -d "{\"nombre\":\"Leche\",\"cantidad\":2,\"unidad\":\"litros\"}"
+
 :: Error esperado: 404
 curl -i http://localhost:3000/api/productos/999
 ```
 
 `-i` muestra el código HTTP en la primera línea (ej. `HTTP/1.1 201 Created`):
 verifica que coincida con la tabla de la sección 3. Si `localhost:3000`
-responde desde tu PC, el emulador también llegará por `10.0.2.2:3000`. Para confirmarlo, abre Chrome **dentro del emulador** y
-visita `http://10.0.2.2:3000/api/productos`.
+responde desde tu PC, el emulador también llegará por `10.0.2.2:3000`. Para
+confirmarlo, abre Chrome **dentro del emulador** y visita
+`http://10.0.2.2:3000/api/productos`.
 
 ## 6. Entregar la ficha al compañero de integración
 
@@ -288,10 +291,10 @@ falla. Por eso:
 
 **El día:**
 
-- [ ] VM encendida; MySQL y la API corriendo.
+- [ ] VM encendida; MySQL y la API corriendo (`systemctl status mysql lista-compras-api`).
 - [ ] `curl http://localhost:3000/api/productos` responde.
-- [ ] Datos limpios: ejecuta `datos_ejemplo.sql` para quitar lo que quedó de
-      los ensayos.
+- [ ] Datos limpios: en la VM, `sudo mysql < /opt/lista-compras/backend/datos_ejemplo.sql`
+      para quitar lo que quedó de los ensayos.
 - [ ] Android Studio abierto, emulador iniciado, app ejecutándose.
 
 **Plan B** si la VM falla en plena sustentación: en

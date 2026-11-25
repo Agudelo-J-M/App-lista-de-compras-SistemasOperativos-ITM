@@ -28,9 +28,9 @@ alojada en una máquina virtual. Se ejecuta desde **Android Studio**, en el
 Para Windows. **Haz todo esto con internet**: la primera vez se descargan el
 SDK, la imagen del emulador y las dependencias. Después funciona sin conexión.
 
-> ¿Trabajas en Linux (Ubuntu)? Sigue **[README_LINUX.md](README_LINUX.md)**:
-> incluye la API lista en `backend/api/`, MySQL, red entre VM y la app sin
-> emulador.
+Esto se hace en el **PC físico** (Windows), no dentro de la VM. La VM solo
+lleva MySQL y la API: su instalación está en
+[backend/README.md](backend/README.md).
 
 **Antes de empezar:** el repo es de Mauro en GitHub. Pídele que te agregue
 como colaborador (Settings → Collaborators) para poder clonar y subir cambios.
@@ -174,8 +174,10 @@ lib/
   providers/shopping_provider.dart           Lógica de negocio (ChangeNotifier)
   screens/                                   Lista y formulario (solo leen el provider)
 backend/
+  README.md                                  Guía paso a paso para montar la VM (MySQL + API)
   schema.sql                                 Script de la base de datos (MySQL/MariaDB)
   datos_ejemplo.sql                          Borra todo y carga 5 productos de ejemplo
+  api/                                       API REST (Node.js + Express + mysql2)
   FICHA_API.md                               Datos de la API real (la llena BD/API)
 test/                                        Pruebas
 ```

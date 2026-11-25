@@ -5,7 +5,10 @@
 --   mysql -u root -p < schema.sql
 -- Luego cargar los datos de ejemplo con datos_ejemplo.sql.
 --
--- Antes de ejecutarlo: cambiar la contraseña de 'app_compras' (abajo).
+-- NO edites la contraseña aquí (terminaría subida al repo). Después de
+-- ejecutarlo, cámbiala a mano:
+--   ALTER USER 'app_compras'@'localhost' IDENTIFIED BY 'TuClaveAqui';
+-- y pon la misma en backend/api/.env. Guía completa: backend/README.md
 -- =====================================================================
 
 -- Para que las tildes (ej. "Café") se guarden bien aunque la consola use otra codificación.
@@ -29,6 +32,7 @@ CREATE TABLE IF NOT EXISTS productos (
 ) ENGINE = InnoDB;
 
 -- Usuario que usa la API. La API corre en la misma VM, así que basta 'localhost'.
+-- La clave de abajo es provisional: cámbiala con ALTER USER (ver arriba).
 CREATE USER IF NOT EXISTS 'app_compras'@'localhost' IDENTIFIED BY 'CambiarEstaClave123!';
 GRANT SELECT, INSERT, UPDATE, DELETE ON lista_compras.productos TO 'app_compras'@'localhost';
 FLUSH PRIVILEGES;
